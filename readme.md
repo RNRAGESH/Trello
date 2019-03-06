@@ -12,6 +12,7 @@ npm install -g json-server
 
 2. Start the server (db.json is located in the materials folder):
 ```
+cd materials
 json-server --watch db.json
 ```
 
