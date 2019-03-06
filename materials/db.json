@@ -1,0 +1,38 @@
+{
+  "columns": [
+    {
+      "id": 1,
+      "title": "To Do"
+    },
+    {
+      "title": "Done",
+      "id": 2
+    }
+  ],
+  "cards": [
+    {
+      "title": "Development",
+      "description": "Create a web page",
+      "columnId": "1",
+      "id": 1
+    },
+    {
+      "title": "Technology Stack",
+      "description": "HTML5, NodeJS, CSS3, BOOTSTRAP, ANGULAR",
+      "columnId": "2",
+      "id": 2
+    },
+    {
+      "title": "Project Setup",
+      "description": "Structure of complete library and components",
+      "columnId": "1",
+      "id": 3
+    },
+    {
+      "title": "Dynamic Components",
+      "description": "Render components from JSON",
+      "columnId": "1",
+      "id": 4
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+<template id="x-header">
+    <style>
+        h1 {
+            float: left;
+            display: block;
+            position: relative;
+            margin: 0px;
+            font-style: italic;
+            color: #bdaeae;
+        }
+        header {
+            display: inline-block;
+            background-color: rgba(0,0,0,.15);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            height: 40px;
+            border-radius: 5px;
+            opacity: 0.9;
+            width: 100%;
+        }
+        #search {
+            display: block;
+            position: relative;
+            margin-left: 750px;
+        }
+        input button{
+            display: inline;
+        }
+
+        button {
+            color: #444444;
+            background: #F3F3F3;
+            border: 1px #DADADA solid;
+            padding: 5px 10px;
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 9pt;
+            outline: none;
+        }
+
+        button:hover {
+            border: 1px #C6C6C6 solid;
+            box-shadow: 1px 1px 1px #EAEAEA;
+            color: #333333;
+            background: #F7F7F7;
+        }
+
+        button:active {
+            box-shadow: inset 1px 1px 1px #DFDFDF;   
+        }
+    </style>
+    <header>
+        <h1>Trello</h1>
+        <div id="search">
+            <input type="text" id="search-text" placeholder="search" />
+            <button id="search-btn">ok</button>
+        </div>
+    </header>
+</template>
+
+<script>
+    const currentDocument = document.currentScript.ownerDocument;
+    
+    window.customElements.define('x-header', class extends HTMLElement {
+        constructor () {
+            super();
+            //clone the template to the shadowDom
+            const shadowRoot = this.attachShadow({mode: 'open'});
+            
+            const template = currentDocument.querySelector('#x-header');
+            const instance = template.content.cloneNode(true);
+            shadowRoot.appendChild(instance);
+            const search = this.shadowRoot.querySelector('#search-btn');
+                search.addEventListener('click', e => {
+                    e.preventDefault();
+                    const text = this.shadowRoot.querySelector('#search-text').value;
+                    const searchEvent = new CustomEvent('search', {
+                    bubbles: true,
+                    detail: { text: () => text }
+                    });
+                    document.querySelector('x-wrapper').dispatchEvent(searchEvent);
+            });
+        }
+    });
+</script>

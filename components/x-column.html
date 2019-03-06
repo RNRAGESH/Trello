@@ -1,0 +1,182 @@
+<template id="x-column">
+    <style>
+        #column {
+            border-radius: 5px;
+            height: 100%;
+            background-color: rgb(209, 212, 209);
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        #top-column {
+            padding: 5px;
+        }
+
+        .x-column-title {
+            display: inline-block;
+        }
+        
+        #edition {
+            display: inline-block;
+            float: right;
+        }
+
+        button {
+            color: #444444;
+            background: #F3F3F3;
+            border: 1px #DADADA solid;
+            padding: 5px 10px;
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 9pt;
+            outline: none;
+        }
+
+        button:hover {
+            border: 1px #C6C6C6 solid;
+            box-shadow: 1px 1px 1px #EAEAEA;
+            color: #333333;
+            background: #F7F7F7;
+        }
+
+        button:active {
+            box-shadow: inset 1px 1px 1px #DFDFDF;   
+        }
+
+
+    </style>
+    <div  id="column">
+        <div id="top-column">
+            <div class="x-column-title"></div>
+            <div id="edition">
+                <button class="new-card">New</button>
+                <button class="edit">Edit</button>
+                <button class="delete">Delete</button>
+            </div>
+        </div>
+        <div class="xcards"></div>
+    </div>
+</template>
+
+<script>
+    const currentDocumentColumn = document.currentScript.ownerDocument;
+    
+    window.customElements.define('x-column', class extends HTMLElement {
+        constructor () {
+            super();
+
+            //clone the template and add it to the shadowDOM
+            const shadowRoot = this.attachShadow({mode: 'open'});
+            
+            const template = currentDocumentColumn.querySelector('#x-column');
+            const instance = template.content.cloneNode(true);
+            shadowRoot.appendChild(instance);
+            var data = [];
+            //get attribute id given by the wrapper
+            const id = this.getAttribute('id');
+            
+            //get attribute titlefrom the wrapper and set it to the tag in the template
+            this.shadowRoot.querySelector('.x-column-title').innerHTML = this.getAttribute('title');
+            setTimeout(()=>{
+            document.querySelector('x-wrapper').addEventListener('search',e=>{
+                const searchText = e.detail.text();
+                //loop through each column and add the desired value to the "column-wrapper" tag
+                this.shadowRoot.querySelector('.xcards').innerHTML = "";
+                for (var i = 0 ; i < data.length ; ++i) {
+                    if(data[i].columnId == id && (data[i].title.indexOf(searchText) > -1 || data[i].description.indexOf(searchText) > -1)){
+                        this.shadowRoot.querySelector('.xcards').innerHTML += 
+                            '<x-card class="card" columnId="'+data[i].columnId +'" id="' + data[i].id + '" title="' + data[i].title + '" description="' + data[i].description + '"></x-column>';
+                    }
+                }
+            });});
+            //fetch all the cards from the db and render them
+            const url = 'http://localhost:' + APIPORT + '/cards'
+            fetch(url)
+                .then((response) => response.text())
+                .then((responseText) => {
+                    data = JSON.parse(responseText);
+                    for (let i = 0 ; i < data.length ; ++i) {
+                        if (data[i].columnId == id) {
+                            this.shadowRoot.querySelector('.xcards').innerHTML += 
+                            '<x-card class="card" columnId="'+data[i].columnId +'" id="' + data[i].id + '" title="' + data[i].title + '" description="' + data[i].description + '"></x-column>';
+                        }
+                    }
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+            
+            //attach an event listener to the delete button
+            let deleteButton = this.shadowRoot.querySelectorAll('.delete'),
+            newButton = this.shadowRoot.querySelectorAll('.new-card'),
+            columnDiv = this.shadowRoot.querySelectorAll('#column');
+            
+            columnDiv.forEach(div => {
+                div.setAttribute("column-id", this.getAttribute('id'));
+                div.addEventListener('drop', e => {
+                    e.preventDefault();
+                    const targetColumn = e.target.closest("#column").getAttribute('column-id'),
+                    cardId = e.dataTransfer.getData('cardID'),
+                    cardCoumnId = e.dataTransfer.getData('cardColumnId'),
+                    cardDesc = e.dataTransfer.getData('cardDesc'),
+                    cardTitle = e.dataTransfer.getData('cardTitle');
+                    let url = 'http://localhost:' + APIPORT + '/cards/' + cardId;
+                    if(targetColumn !== cardCoumnId){
+                    fetch(url, {
+                        method: 'put',
+                        body: JSON.stringify({'title': cardTitle, 'description': cardDesc, 'columnId': targetColumn}),
+                        headers:{
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json());
+                    window.location.reload(true);
+                    }
+                });
+                div.addEventListener('dragover', e => {
+                    e.preventDefault();
+                });
+            });
+            deleteButton.forEach(button => {
+                button.addEventListener('click', e => {
+                    e.preventDefault();
+                    this.deleteColumn(id);
+                });
+            });
+            newButton.forEach(button => {
+                button.addEventListener('click', e => {
+                    e.preventDefault();
+                    this.newColumn(id);
+                });
+            });
+        }
+        //delete the column using its id
+        deleteColumn(id) {
+            let url = 'http://localhost:' + APIPORT + '/columns/' + id;
+            fetch(url, {
+                method: 'delete'
+            })
+            .then(response => response.json());
+            window.location.reload(true);
+        }
+        
+        newColumn(id){
+            this.shadowRoot.querySelector('.xcards').innerHTML += 
+                            '<x-card class="card" isNew=true columnId="'+ id+'"></x-column>';
+        }
+        //request to edit the title of the column
+        editColumn(id, title) {
+            let url = 'http://localhost:' + APIPORT + '/columns/' + id;
+            fetch(url, {
+                method: 'put',
+                body: JSON.stringify({'title': title}),
+                headers:{
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json());
+            window.location.reload(true);
+        }
+    });
+</script>

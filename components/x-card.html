@@ -1,0 +1,222 @@
+<template id="x-card">
+    <style>
+
+[contenteditable="true"] {
+  font-family: "Rajdhani";
+  color: #C00;
+}
+        #xcard {
+            border-radius: 5px;
+            width: 300px;
+            height: 100px;
+            position: relative;
+            margin-top: 5px;
+            margin: 10px;
+            text-align: center;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+            background-color: white;
+        }
+        #top-card{
+            text-align: left;
+            padding: 10px;
+            min-height: 15px;
+            background: #2868a8;
+            border-top-right-radius: 5px;
+            color: white;
+            border-top-left-radius: 5px;
+        }
+        #top-column {
+            padding: 5px;
+        }
+
+        .x-column-title {
+            display: inline-block;
+        }
+        
+        #edition {
+            display: inline-block;
+            float: right;
+        }
+
+        button {
+            color: #444444;
+            background: #F3F3F3;
+            border: 1px #DADADA solid;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 9pt;
+            outline: none;
+        }
+
+        button:hover {
+            border: 1px #C6C6C6 solid;
+            box-shadow: 1px 1px 1px #EAEAEA;
+            color: #333333;
+            background: #F7F7F7;
+        }
+
+        button:active {
+            box-shadow: inset 1px 1px 1px #DFDFDF;   
+        }
+        .hide{
+            display: none;
+        }
+    </style>
+    <div draggable="true"  id="xcard">
+        <div id="top-card">
+            <span class="x-card-title"></span>
+            <div id="edition">
+                <button class="edit">Edit</button>
+                <button class="save hide">Save</button>
+                <button class="delete">Delete</button>
+            </div>
+        </div>
+        <p class="x-card-description"></p>
+    </div>
+</template>
+
+<script>
+    const currentDocumentCard = document.currentScript.ownerDocument;
+    
+    window.customElements.define('x-card', class extends HTMLElement {
+        constructor () {
+            super();
+            //clone the template and add it to the shadowDOM
+            const shadowRoot = this.attachShadow({mode: 'open'}),
+            template = currentDocumentCard.querySelector('#x-card'),
+            isNew = this.getAttribute("isNew"),
+            instance = template.content.cloneNode(true);
+            shadowRoot.appendChild(instance);
+            if(isNew === "true"){
+                this.shadowRoot.querySelector('.x-card-title').innerHTML = "Title";
+                this.shadowRoot.querySelector('.x-card-description').innerHTML = "Description";
+                this.shadowRoot.querySelector('.x-card-description').contentEditable = true;
+            this.shadowRoot.querySelector('.x-card-title').contentEditable = true;
+                this.shadowRoot.querySelector('.save').classList.remove("hide");
+                this.shadowRoot.querySelector('.edit').classList.add("hide");
+                this.shadowRoot.querySelector('.delete').classList.remove("hide");
+            }else {
+            //get title and description attribute given by the column the card is in
+            this.shadowRoot.querySelector('.x-card-title').innerHTML = this.getAttribute('title');
+            this.shadowRoot.querySelector('.x-card-description').innerHTML = this.getAttribute('description');
+            }
+            const cardDiv = this.shadowRoot.querySelectorAll('#xcard');
+            cardDiv.forEach(div=>{
+                div.setAttribute('card-columnId', this.getAttribute('columnId'));
+                div.setAttribute('card-id', this.getAttribute('id'));
+                div.setAttribute('card-desc', this.shadowRoot.querySelector('.x-card-description').textContent);
+                div.setAttribute('card-title', this.shadowRoot.querySelector('.x-card-title').textContent);
+                div.addEventListener("dragstart", function(event) {
+                    event.dataTransfer.setData("cardID", this.getAttribute('card-id'));
+                    event.dataTransfer.setData("cardColumnId", this.getAttribute('card-columnId'));
+                    event.dataTransfer.setData("cardDesc", this.getAttribute('card-desc'));
+                    event.dataTransfer.setData("cardTitle", this.getAttribute('card-title'));
+                });
+            });
+            //add event listener to the card itself so that the size changes on click (not working)
+            this.addEventListener('click', e => {
+                this.setAttribute('style', 'width: 350px ; height: 270px');
+            });
+            
+            // attach event listener to the delete button to delete the card
+            let deleteButton = this.shadowRoot.querySelectorAll('.delete'),
+            editButton = this.shadowRoot.querySelectorAll('.edit'),
+            saveButton = this.shadowRoot.querySelectorAll('.save');
+            const id = this.getAttribute('id');
+            deleteButton.forEach(button => {
+                button.addEventListener('click', e => {
+                    this.deleteCard(id);
+                });
+            });
+            editButton.forEach(button => {
+                button.addEventListener('click', e => {
+                    this.editCard(id);
+                });
+            });
+            saveButton.forEach(button => {
+                button.addEventListener('click', e => {
+                    if(isNew === "true"){
+                        this.addColumn();
+                    }else{
+                        this.updateCard(id);
+                    }
+                });
+            });
+        }
+        
+        //delete the card by its id
+        deleteCard(id) {
+            let url = 'http://localhost:' + APIPORT + '/cards/' + id;
+            fetch(url, {
+                method: 'delete'
+            })
+            .then(response => response.json());
+            window.location.reload(true);
+        }
+
+        //request to edit the title and the description of the card
+        updateCard(id) {
+            const columnId = this.getAttribute('columnId'),
+            description = this.shadowRoot.querySelector('.x-card-description').textContent,
+            title = this.shadowRoot.querySelector('.x-card-title').textContent;
+            let url = 'http://localhost:' + APIPORT + '/cards/' + id;
+            fetch(url, {
+                method: 'put',
+                body: JSON.stringify({'title': title, 'description': description, 'columnId': columnId}),
+                headers:{
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json());
+            this.shadowRoot.querySelector('.x-card-description').contentEditable = false;
+            this.shadowRoot.querySelector('.x-card-title').contentEditable = false;
+            this.shadowRoot.querySelector('.save').classList.add("hide");
+            this.shadowRoot.querySelector('.edit').classList.remove("hide");
+            //window.location.reload(true);
+        }
+
+        editCard(){
+            this.shadowRoot.querySelector('.x-card-description').contentEditable = true;
+            this.shadowRoot.querySelector('.x-card-title').contentEditable = true;
+            this.shadowRoot.querySelector('.edit').classList.add("hide");
+            this.shadowRoot.querySelector('.save').classList.remove("hide");
+        }
+        addColumn() {
+            const url = 'http://localhost:' + APIPORT + '/cards';
+            const columnId = this.getAttribute('columnId'),
+            description = this.shadowRoot.querySelector('.x-card-description').textContent,
+            title = this.shadowRoot.querySelector('.x-card-title').textContent;
+            this.addCard(title, description, columnId);
+        }
+
+        addCard(title, description, id_column) {
+            const url = 'http://localhost:' + APIPORT + '/cards';
+            //check if title already exist
+            fetch(url)
+            .then((response) => response.text())
+            .then((responseText) => {
+                let data = JSON.parse(responseText);
+                for (let i = 0 ; i < data.length ; ++i){
+                    if (data[i].title == title) {
+                        alert('Title already exist');
+                        throw new Error("Title already exist");
+                    }
+                }
+                //post to the server
+                fetch(url, {
+                    method: 'post',
+                    headers: {
+                        'Accept': 'application/json, text/plain, */*',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({'title': title, 'description': description, 'columnId': id_column})
+                    }).then(res=>res.json())
+                    .then(res => console.log(res));
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+            window.location.reload(true);
+        }
+    });
+</script>

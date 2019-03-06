@@ -1,0 +1,80 @@
+<template id="x-wrapper">
+    
+    <style>
+        #wrapper {
+            width: 100%;
+            height: calc(100%);
+            display: table;
+            table-layout:fixed;
+        }
+        .xcolumn {
+            display: inline-block;
+            position: relative;
+            padding: 5px;
+            margin-top: 5px;
+        }
+        #addColumn {
+            color: #444444;
+            background: #F3F3F3;
+            border: 1px #DADADA solid;
+            padding: 5px 10px;
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 9pt;
+            outline: none;
+            position: relative;
+            margin-top: 5px;
+            margin-left: 5px;
+        }
+
+        #addColumn:hover {
+            border: 1px #C6C6C6 solid;
+            box-shadow: 1px 1px 1px #EAEAEA;
+            color: #333333;
+            background: #F7F7F7;
+        }
+
+        #addColumn:active {
+            box-shadow: inset 1px 1px 1px #DFDFDF;   
+        }
+        #column-wrapper{
+            display: inline;
+        }
+    </style>
+    <div id="wrapper">
+        <div id="column-wrapper"></div>
+        <add-column></add-column>
+    </div>
+</template>
+
+<script>
+    const currentDocumentWrapper = document.currentScript.ownerDocument;
+    
+    window.customElements.define('x-wrapper', class extends HTMLElement {
+        constructor () {
+            super();
+            //clone the template to the shadowDom
+            const shadowRoot = this.attachShadow({mode: 'open'});
+            const template = currentDocumentWrapper.querySelector('#x-wrapper');
+            const instance = template.content.cloneNode(true);
+            shadowRoot.appendChild(instance);
+            let data = [];
+            //fetch all the columns from the server and render them
+            fetch(`http://localhost:` + APIPORT + `/columns`)
+            .then((response) => response.text())
+            .then((responseText) => {
+                data = JSON.parse(responseText);
+                //loop through each column and add the desired value to the "column-wrapper" tag
+                for (var i = 0 ; i < data.length ; ++i) {
+                    this.shadowRoot.querySelector('#column-wrapper').innerHTML += 
+                    '<x-column class="xcolumn" title="' + data[i].title + '" id="' + data[i].id + '"></x-column>';
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+
+
+        }
+    });
+</script>

@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Trello Sample</title>
+
+        <link rel="stylesheet" type="text/css" href="style/style.css">
+
+        <link rel="import" href="./components/x-header.html">
+        <link rel="import" href="./components/x-wrapper.html">
+        <link rel="import" href="./components/x-column.html">
+        <link rel="import" href="./components/x-card.html">
+        <link rel="import" href="./components/add-column.html">
+        <link rel="import" href="./components/add-card.html">
+
+        <script>
+            //set the port number of the api and web server.
+            const APIPORT = 3000;
+            const SERVERPORT = location.port;
+        </script>
+    </head>
+    <body>
+        <x-header></x-header>
+        <x-wrapper></x-wrapper>
+    </body>
+</html>
